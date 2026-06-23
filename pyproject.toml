@@ -1,5 +1,5 @@
 [project]
-name = "pm-chaos-agents"
+name = "super-develop-agents"
 version = "1.0.0"
 description = "产品经理智能体 + 混沌测试智能体"
 authors = [
