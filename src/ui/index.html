@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PM + Chaos Agents</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --success: #10b981;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: #f8fafc;
+            height: 100vh;
+            display: flex;
+            flex-direction: row;
+            color: #1e293b;
+        }
+
+        /* ═══ Sidebar ═══ */
+        .sidebar {
+            width: 230px; min-width: 230px;
+            background: #1e1b4b;
+            color: #c7d2fe;
+            display: flex; flex-direction: column;
+            height: 100vh;
+            user-select: none;
+            z-index: 100;
+        }
+        .sidebar-brand {
+            padding: 1.2rem 1.2rem 0.9rem;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+        }
+        .sidebar-brand .logo {
+            width: 36px; height: 36px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; margin-bottom: 0.5rem;
+        }
+        .sidebar-brand h2 { font-size: 0.95rem; font-weight: 700; color: white; }
+        .sidebar-brand p { font-size: 0.68rem; opacity: 0.45; margin-top: 2px; }
+        .sidebar-nav { flex: 1; padding: 0.5rem 0; overflow-y: auto; }
+        .sidebar-nav .nav-section {
+            font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em;
+            padding: 0.75rem 1.2rem 0.4rem; color: rgba(255,255,255,0.3);
+        }
+        .sidebar-nav a {
+            display: flex; align-items: center; gap: 0.6rem;
+            padding: 0.55rem 1.2rem; color: #a5b4fc;
+            text-decoration: none; font-size: 0.83rem; font-weight: 500;
+            transition: all 0.15s; border-left: 3px solid transparent;
+            margin: 1px 0; cursor: pointer;
+        }
+        .sidebar-nav a:hover { background: rgba(255,255,255,0.05); color: white; }
+        .sidebar-nav a.active {
+            background: rgba(99,102,241,0.18); color: white;
+            border-left-color: #6366f1; font-weight: 600;
+        }
+        .sidebar-nav .nav-icon { font-size: 1rem; width: 22px; text-align: center; flex-shrink: 0; }
+        .sidebar-footer {
+            padding: 0.6rem 1.2rem; border-top: 1px solid rgba(255,255,255,0.07);
+            font-size: 0.68rem; opacity: 0.35; display: flex; align-items: center; gap: 0.4rem;
+        }
+        .sidebar-footer .dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; }
+
+        /* ═══ Content Frame ═══ */
+        .content-frame {
+            flex: 1;
+            border: none;
+            width: 100%;
+            height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <!-- ═══ Shared Sidebar ═══ -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="logo">&#x1F916;</div>
+            <h2>PM + Chaos</h2>
+            <p>产品经理 & 混沌测试</p>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-section">Agents</div>
+            <a data-page="pm" class="active">
+                <span class="nav-icon">&#x1F4DD;</span>产品
+            </a>
+            <a data-page="chaos">
+                <span class="nav-icon">&#x2622;</span>混沌测试
+            </a>
+            <a data-page="testpilot">
+                <span class="nav-icon">&#x1F9EA;</span>智测引擎
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <span class="dot"></span> System Online
+        </div>
+    </aside>
+
+    <iframe class="content-frame" id="contentFrame" src="/ui/pm.html"></iframe>
+
+    <script>
+        const pageMap = {
+            pm: '/ui/pm.html',
+            chaos: '/ui/chaos.html',
+            testpilot: '/ui/testpilot.html',
+        };
+
+        const iframe = document.getElementById('contentFrame');
+        const navLinks = document.querySelectorAll('.sidebar-nav a[data-page]');
+
+        function navigate(page) {
+            navLinks.forEach(a => a.classList.remove('active'));
+            const link = document.querySelector(`.sidebar-nav a[data-page="${page}"]`);
+            if (link) link.classList.add('active');
+
+            const url = pageMap[page];
+            if (url) {
+                iframe.src = url;
+                if (location.hash !== '#' + page) {
+                    history.pushState(null, '', '#' + page);
+                }
+            }
+        }
+
+        navLinks.forEach(a => {
+            a.addEventListener('click', () => navigate(a.dataset.page));
+        });
+
+        window.addEventListener('hashchange', () => {
+            const page = location.hash.replace('#', '') || 'pm';
+            navigate(page);
+        });
+
+        const initPage = location.hash.replace('#', '') || 'pm';
+        if (initPage !== 'pm') navigate(initPage);
+    </script>
+</body>
+</html>
