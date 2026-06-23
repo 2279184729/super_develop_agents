@@ -1,4 +1,9 @@
-"""PM Agent workers — clarifier, analyzer, and PRD generator."""
+"""PM Agent workers — clarifier, analyzer, and PRD generator.
+
+Uses MetaGPT-style Role pattern: each worker is driven by a RoleContext
+that defines its profile, goal, and constraints. The RoleContext enriches
+the system prompt to produce more consistent, role-aligned outputs.
+"""
 
 import json
 import os
@@ -12,6 +17,7 @@ from langgraph.types import interrupt
 from .registry import WorkerRegistry
 from .pm_state import PMState, ClarificationRound
 from .state import WorkerResult
+from .role import create_pm_role, RoleContext
 
 load_dotenv()
 
@@ -72,6 +78,7 @@ def _parse_json_response(text: str) -> dict:
 )
 async def clarifier_worker_node(state: PMState) -> dict[str, Any]:
     """Clarifier worker — generates targeted clarification questions."""
+    role = create_pm_role("clarifier")
 
     context_parts = [f"原始需求: {state.user_query}"]
     for round_data in state.clarification_rounds:
@@ -84,14 +91,10 @@ async def clarifier_worker_node(state: PMState) -> dict[str, Any]:
 
     prompt = ChatPromptTemplate.from_messages([
         ("system",
-         "你是一位资深产品经理，拥有15年互联网产品经验。\n"
-         "你的任务是通过精准的提问来澄清用户的需求。\n\n"
-         "提问规则:\n"
-         "1. 每轮最多提出3个问题\n"
-         "2. 问题要具体、有引导性\n"
-         "3. 为每个问题提供2-4个选项参考\n"
-         "4. 避免重复已经问过的问题\n"
-         "5. 聚焦于最关键的缺失信息\n\n"
+         f"你是{role.name}。\n"
+         f"背景: {role.profile}\n"
+         f"目标: {role.goal}\n"
+         f"约束: {role.constraints}\n\n"
          "输出格式（严格JSON）:\n"
          "{{\n"
          '  "questions": [\n'
@@ -161,6 +164,7 @@ async def clarifier_worker_node(state: PMState) -> dict[str, Any]:
 )
 async def analyzer_worker_node(state: PMState) -> dict[str, Any]:
     """Analyzer worker — performs structured requirements analysis."""
+    role = create_pm_role("analyzer")
 
     context_parts = [f"## 原始需求\n{state.user_query}\n"]
     if state.clarification_rounds:
@@ -175,8 +179,10 @@ async def analyzer_worker_node(state: PMState) -> dict[str, Any]:
 
     prompt = ChatPromptTemplate.from_messages([
         ("system",
-         "你是一位资深产品经理，拥有15年互联网产品经验。\n"
-         "你的任务是将收集到的需求信息整理成结构化的分析报告。\n\n"
+         f"你是{role.name}。\n"
+         f"背景: {role.profile}\n"
+         f"目标: {role.goal}\n"
+         f"约束: {role.constraints}\n\n"
          "输出格式（Markdown）:\n\n"
          "## 1. 目标用户\n"
          "[描述目标用户群体、用户画像]\n\n"
@@ -249,6 +255,7 @@ async def analyzer_worker_node(state: PMState) -> dict[str, Any]:
 )
 async def prd_generator_worker_node(state: PMState) -> dict[str, Any]:
     """PRD Generator worker — creates structured PRD document."""
+    role = create_pm_role("prd_writer")
 
     analysis = state.analysis_result or "无分析结果"
 
@@ -258,13 +265,10 @@ async def prd_generator_worker_node(state: PMState) -> dict[str, Any]:
 
     prompt = ChatPromptTemplate.from_messages([
         ("system",
-         "你是一位资深产品经理，拥有15年互联网产品经验。\n"
-         "你的任务是基于需求分析结果，生成一份专业、完整的PRD文档。\n\n"
-         "PRD文档要求:\n"
-         "1. 功能描述必须具体，开发者可以直接据此编码\n"
-         "2. 验收标准必须可测试、可量化\n"
-         "3. 避免模糊表述（如'良好的用户体验'）\n"
-         "4. 使用Markdown格式，结构清晰\n\n"
+         f"你是{role.name}。\n"
+         f"背景: {role.profile}\n"
+         f"目标: {role.goal}\n"
+         f"约束: {role.constraints}\n\n"
          "PRD文档结构:\n\n"
          "# [产品名称] - 产品需求文档 (PRD)\n\n"
          "## 1. 概述\n"
