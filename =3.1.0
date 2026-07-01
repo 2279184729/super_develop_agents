@@ -1,0 +1,86 @@
+Requirement already satisfied: langgraph in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (0.2.34)
+Collecting langgraph
+  Downloading langgraph-1.2.7-py3-none-any.whl.metadata (4.9 kB)
+Requirement already satisfied: langgraph-checkpoint-sqlite in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (2.0.0)
+Collecting langgraph-checkpoint-sqlite
+  Using cached langgraph_checkpoint_sqlite-3.1.0-py3-none-any.whl.metadata (3.2 kB)
+Collecting langchain-core<2,>=1.4.7 (from langgraph)
+  Downloading langchain_core-1.4.8-py3-none-any.whl.metadata (4.7 kB)
+Collecting langgraph-checkpoint<5.0.0,>=4.1.0 (from langgraph)
+  Using cached langgraph_checkpoint-4.1.1-py3-none-any.whl.metadata (5.2 kB)
+Requirement already satisfied: langgraph-prebuilt<1.2.0,>=1.1.0 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langgraph) (1.1.0)
+Requirement already satisfied: langgraph-sdk<0.5.0,>=0.4.2 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langgraph) (0.4.2)
+Requirement already satisfied: pydantic>=2.7.4 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langgraph) (2.9.2)
+Requirement already satisfied: xxhash>=3.5.0 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langgraph) (3.7.0)
+Requirement already satisfied: aiosqlite>=0.20 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langgraph-checkpoint-sqlite) (0.20.0)
+Requirement already satisfied: sqlite-vec>=0.1.6 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langgraph-checkpoint-sqlite) (0.1.9)
+Requirement already satisfied: typing_extensions>=4.0 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from aiosqlite>=0.20->langgraph-checkpoint-sqlite) (4.15.0)
+Requirement already satisfied: jsonpatch<2.0.0,>=1.33.0 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langchain-core<2,>=1.4.7->langgraph) (1.33)
+Collecting langchain-protocol>=0.0.17 (from langchain-core<2,>=1.4.7->langgraph)
+  Downloading langchain_protocol-0.0.18-py3-none-any.whl.metadata (2.4 kB)
+Collecting langsmith<1.0.0,>=0.3.45 (from langchain-core<2,>=1.4.7->langgraph)
+  Downloading langsmith-0.9.4-py3-none-any.whl.metadata (21 kB)
+Requirement already satisfied: packaging>=23.2.0 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langchain-core<2,>=1.4.7->langgraph) (24.2)
+Requirement already satisfied: pyyaml<7.0.0,>=5.3.0 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langchain-core<2,>=1.4.7->langgraph) (6.0.3)
+Requirement already satisfied: tenacity!=8.4.0,<10.0.0,>=8.1.0 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langchain-core<2,>=1.4.7->langgraph) (8.5.0)
+Requirement already satisfied: uuid-utils<1.0,>=0.12.0 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langchain-core<2,>=1.4.7->langgraph) (0.14.1)
+Requirement already satisfied: ormsgpack>=1.12.0 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langgraph-checkpoint<5.0.0,>=4.1.0->langgraph) (1.12.2)
+Requirement already satisfied: httpx>=0.25.2 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langgraph-sdk<0.5.0,>=0.4.2->langgraph) (0.27.2)
+Collecting orjson>=3.11.5 (from langgraph-sdk<0.5.0,>=0.4.2->langgraph)
+  Using cached orjson-3.11.9-cp311-cp311-win_amd64.whl.metadata (43 kB)
+Requirement already satisfied: websockets<16,>=14 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langgraph-sdk<0.5.0,>=0.4.2->langgraph) (15.0.1)
+Requirement already satisfied: annotated-types>=0.6.0 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from pydantic>=2.7.4->langgraph) (0.7.0)
+Requirement already satisfied: pydantic-core==2.23.4 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from pydantic>=2.7.4->langgraph) (2.23.4)
+Requirement already satisfied: anyio in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from httpx>=0.25.2->langgraph-sdk<0.5.0,>=0.4.2->langgraph) (4.13.0)
+Requirement already satisfied: certifi in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from httpx>=0.25.2->langgraph-sdk<0.5.0,>=0.4.2->langgraph) (2026.5.20)
+Requirement already satisfied: httpcore==1.* in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from httpx>=0.25.2->langgraph-sdk<0.5.0,>=0.4.2->langgraph) (1.0.9)
+Requirement already satisfied: idna in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from httpx>=0.25.2->langgraph-sdk<0.5.0,>=0.4.2->langgraph) (3.18)
+Requirement already satisfied: sniffio in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from httpx>=0.25.2->langgraph-sdk<0.5.0,>=0.4.2->langgraph) (1.3.1)
+Requirement already satisfied: h11>=0.16 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from httpcore==1.*->httpx>=0.25.2->langgraph-sdk<0.5.0,>=0.4.2->langgraph) (0.16.0)
+Requirement already satisfied: jsonpointer>=1.9 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from jsonpatch<2.0.0,>=1.33.0->langchain-core<2,>=1.4.7->langgraph) (3.1.1)
+Requirement already satisfied: distro>=1.7.0 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langsmith<1.0.0,>=0.3.45->langchain-core<2,>=1.4.7->langgraph) (1.9.0)
+Requirement already satisfied: requests-toolbelt>=1.0.0 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langsmith<1.0.0,>=0.3.45->langchain-core<2,>=1.4.7->langgraph) (1.0.0)
+Requirement already satisfied: requests>=2.0.0 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langsmith<1.0.0,>=0.3.45->langchain-core<2,>=1.4.7->langgraph) (2.33.0)
+Requirement already satisfied: zstandard>=0.23.0 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from langsmith<1.0.0,>=0.3.45->langchain-core<2,>=1.4.7->langgraph) (0.25.0)
+Requirement already satisfied: charset_normalizer<4,>=2 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from requests>=2.0.0->langsmith<1.0.0,>=0.3.45->langchain-core<2,>=1.4.7->langgraph) (3.4.7)
+Requirement already satisfied: urllib3<3,>=1.26 in c:\users\edy\appdata\local\programs\python\python311\lib\site-packages (from requests>=2.0.0->langsmith<1.0.0,>=0.3.45->langchain-core<2,>=1.4.7->langgraph) (2.7.0)
+Downloading langgraph-1.2.7-py3-none-any.whl (246 kB)
+   -------------------------------------- 246.9/246.9 kB 148.5 kB/s eta 0:00:00
+Using cached langgraph_checkpoint_sqlite-3.1.0-py3-none-any.whl (38 kB)
+Downloading langchain_core-1.4.8-py3-none-any.whl (557 kB)
+   -------------------------------------- 557.4/557.4 kB 250.1 kB/s eta 0:00:00
+Using cached langgraph_checkpoint-4.1.1-py3-none-any.whl (56 kB)
+Downloading langchain_protocol-0.0.18-py3-none-any.whl (7.2 kB)
+Downloading langsmith-0.9.4-py3-none-any.whl (603 kB)
+   -------------------------------------- 603.8/603.8 kB 296.8 kB/s eta 0:00:00
+Using cached orjson-3.11.9-cp311-cp311-win_amd64.whl (127 kB)
+Installing collected packages: orjson, langchain-protocol, langsmith, langchain-core, langgraph-checkpoint, langgraph-checkpoint-sqlite, langgraph
+  Attempting uninstall: orjson
+    Found existing installation: orjson 3.10.7
+    Uninstalling orjson-3.10.7:
+      Successfully uninstalled orjson-3.10.7
+  Attempting uninstall: langchain-protocol
+    Found existing installation: langchain-protocol 0.0.16
+    Uninstalling langchain-protocol-0.0.16:
+      Successfully uninstalled langchain-protocol-0.0.16
+  Attempting uninstall: langsmith
+    Found existing installation: langsmith 0.1.147
+    Uninstalling langsmith-0.1.147:
+      Successfully uninstalled langsmith-0.1.147
+  Attempting uninstall: langchain-core
+    Found existing installation: langchain-core 0.3.10
+    Uninstalling langchain-core-0.3.10:
+      Successfully uninstalled langchain-core-0.3.10
+  Attempting uninstall: langgraph-checkpoint
+    Found existing installation: langgraph-checkpoint 2.1.2
+    Uninstalling langgraph-checkpoint-2.1.2:
+      Successfully uninstalled langgraph-checkpoint-2.1.2
+  Attempting uninstall: langgraph-checkpoint-sqlite
+    Found existing installation: langgraph-checkpoint-sqlite 2.0.0
+    Uninstalling langgraph-checkpoint-sqlite-2.0.0:
+      Successfully uninstalled langgraph-checkpoint-sqlite-2.0.0
+  Attempting uninstall: langgraph
+    Found existing installation: langgraph 0.2.34
+    Uninstalling langgraph-0.2.34:
+      Successfully uninstalled langgraph-0.2.34
+Successfully installed langchain-core-1.4.8 langchain-protocol-0.0.18 langgraph-1.2.7 langgraph-checkpoint-4.1.1 langgraph-checkpoint-sqlite-3.1.0 langsmith-0.9.4 orjson-3.11.9
