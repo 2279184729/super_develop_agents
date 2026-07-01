@@ -1,7 +1,7 @@
 [project]
 name = "super-develop-agents"
 version = "1.0.0"
-description = "产品经理智能体 + 混沌测试智能体"
+description = "超级智能体开发平台 — 用智能体开发智能体，让 AI 自己构建 AI。"
 authors = [
     { name="Developer", email="developer@example.com" }
 ]
