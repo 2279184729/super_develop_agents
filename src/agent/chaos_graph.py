@@ -124,6 +124,32 @@ async def run_chaos_stream(
     if thread_id is None:
         thread_id = str(uuid.uuid4())
 
+    config = {"configurable": {"thread_id": thread_id}}
+
+    existing_state = await _get_chaos_graph().aget_state(config)
+
+    if existing_state and existing_state.values and existing_state.values.get("test_results"):
+        # Thread already has results — return existing summary without re-running
+        prior = existing_state.values
+        yield sse("connected", {"thread_id": thread_id})
+        yield sse("status", {"node": "start", "status": "started", "label": f"加载已有测试结果，共 {len(prior.get('test_results', []))} 个用例"})
+        for i, tr in enumerate(prior.get("test_results", [])):
+            tr_data = tr.model_dump() if hasattr(tr, "model_dump") else tr
+            yield sse("case_result", {
+                "index": i + 1,
+                "case_id": tr_data.get("case_id", ""),
+                "scenario": tr_data.get("scenario", ""),
+                "passed": tr_data.get("passed", False),
+                "severity": tr_data.get("severity", "low"),
+                "response_time_ms": tr_data.get("response_time_ms", 0),
+            })
+        yield sse("status", {"node": "reporter", "status": "started", "label": "生成测试报告..."})
+        yield sse("done", {
+            "summary": prior.get("summary"),
+            "final_result": prior.get("final_result"),
+        })
+        return
+
     test_cases = []
     for i, case_data in enumerate(config_data.get("test_cases", [])):
         test_cases.append(TestCase(
@@ -151,8 +177,6 @@ async def run_chaos_stream(
         timeout_per_case=config_data.get("timeout_per_case", 60),
         messages=[{"role": "human", "content": f"Run chaos test with {len(test_cases)} cases"}],
     )
-
-    config = {"configurable": {"thread_id": thread_id}}
 
     yield sse("connected", {"thread_id": thread_id})
     yield sse("status", {"node": "start", "status": "started", "label": f"开始混沌测试，共 {len(test_cases)} 个用例"})

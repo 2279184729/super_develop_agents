@@ -92,9 +92,60 @@
         .modal { background: var(--surface); border-radius: var(--radius); padding: 1.5rem; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
         .modal h3 { margin-bottom: 0.8rem; }
         .modal textarea { width: 100%; min-height: 200px; }
+        /* History Sidebar */
+        .body-inner { display: flex; flex: 1; min-height: 0; }
+        .history-sidebar {
+            width: 220px; min-width: 220px;
+            background: #f1f5f9;
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+        .history-sidebar-header {
+            padding: 0.7rem 1rem;
+            font-size: 0.72rem; font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .history-sidebar-list { flex: 1; overflow-y: auto; }
+        .history-sidebar-item {
+            padding: 0.55rem 1rem; cursor: pointer;
+            font-size: 0.78rem;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+            transition: background 0.15s;
+        }
+        .history-sidebar-item:hover { background: #e2e8f0; }
+        .history-sidebar-item.active {
+            background: #ddd6fe;
+            border-left: 3px solid #7c3aed;
+        }
+        .history-sidebar-item .item-title {
+            overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap; margin-bottom: 2px;
+        }
+        .history-sidebar-item .item-badge {
+            font-size: 0.6rem; padding: 1px 6px;
+            border-radius: 8px; background: #ede9fe;
+            color: #7c3aed; font-weight: 600;
+            display: inline-block;
+        }
+        .history-sidebar-empty {
+            padding: 1rem; text-align: center;
+            font-size: 0.78rem; color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
+<!-- Body Inner: Sidebar + Main -->
+<div class="body-inner">
+    <div class="history-sidebar">
+        <div class="history-sidebar-header">历史测试</div>
+        <div class="history-sidebar-list" id="historyList">
+            <div class="history-sidebar-empty">暂无历史测试</div>
+        </div>
+    </div>
 <!-- Main -->
 <div class="main">
     <div class="header">
@@ -216,6 +267,7 @@
         </div>
     </div>
 </div>
+</div><!-- /body-inner -->
 
 <!-- Import Modal -->
 <div class="modal-overlay" id="importModal">
@@ -240,6 +292,71 @@
     let testCases = [];
     let running = false;
     let abortController = null;
+    let threadId = null;
+
+    // ── History ──
+    function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    async function loadHistory() {
+        const el = document.getElementById('historyList');
+        try {
+            const r = await fetch('/api/chaos/threads?limit=50');
+            const threads = await r.json();
+            if (threads.length) {
+                el.innerHTML = threads.map(t => `
+                    <div class="history-sidebar-item${t.thread_id === threadId ? ' active' : ''}"
+                         onclick="loadHistoryThread('${esc(t.thread_id)}')" title="${esc(t.title)}">
+                        <div class="item-title">${esc(t.title)}</div>
+                        <span class="item-badge">${t.has_report ? 'Report' : esc(t.step || '')}</span>
+                    </div>
+                `).join('');
+            } else {
+                el.innerHTML = '<div class="history-sidebar-empty">暂无历史测试</div>';
+            }
+        } catch (e) {}
+    }
+
+    async function loadHistoryThread(tid) {
+        threadId = tid;
+        try {
+            const r = await fetch('/api/chaos/state/' + tid);
+            if (!r.ok) throw new Error('Thread not found');
+            const state = await r.json();
+
+            // Restore config
+            if (state.test_cases) {
+                testCases = state.test_cases;
+                renderCases();
+            }
+
+            // Show report if available
+            if (state.summary) {
+                document.getElementById('reportCard').style.display = 'block';
+                showReport(state.summary, state.final_result);
+            }
+
+            if (state.test_results && state.test_results.length > 0) {
+                document.getElementById('logArea').style.display = 'block';
+                const log = document.getElementById('logArea');
+                log.innerHTML = state.test_results.map(r => {
+                    const icon = r.passed ? '✅' : '❌';
+                    return `<div class="${r.passed ? 'log-pass' : 'log-fail'}">${icon} ${r.case_id} (${r.scenario}) ${r.passed ? '通过' : '失败'} | ${r.response_time_ms}ms | ${r.severity}</div>`;
+                }).join('');
+            }
+
+            loadHistory();
+        } catch (e) {
+            document.getElementById('logArea').style.display = 'block';
+            document.getElementById('logArea').innerHTML = '<div class="log-fail">加载历史测试失败：' + esc(e.message) + '</div>';
+        }
+    }
+    window.loadHistoryThread = loadHistoryThread;
+
+    loadHistory();
 
     // ── External config toggle ──
     document.getElementById('targetAgent').addEventListener('change', function() {
@@ -405,7 +522,9 @@
     function handleSSE(type, data, total) {
         switch (type) {
             case 'connected':
+                threadId = data.thread_id;
                 appendLog('连接成功, thread: ' + data.thread_id);
+                loadHistory();
                 break;
             case 'status':
                 appendLog(data.label);
@@ -417,6 +536,7 @@
             case 'done':
                 appendLog('测试完成', 'log-pass');
                 showReport(data.summary, data.final_result);
+                loadHistory();
                 break;
             case 'error':
                 appendLog('错误: ' + data.error, 'log-fail');

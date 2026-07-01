@@ -172,21 +172,35 @@ async def run_pm_stream(
     user_query: str,
     thread_id: str | None = None,
 ) -> AsyncGenerator[str, None]:
-    """Start PM Agent conversation. Yields SSE events."""
+    """Start or continue PM Agent conversation. Yields SSE events."""
     if thread_id is None:
         thread_id = str(uuid.uuid4())
 
-    initial_state = PMState(
-        user_query=user_query,
-        messages=[{"role": "user", "content": user_query}],
-    )
-
     config = {"configurable": {"thread_id": thread_id}}
+
+    existing_state = await _get_pm_graph().aget_state(config)
+
+    if existing_state and existing_state.values:
+        prior = existing_state.values
+        prior_messages = prior.get("messages", [])
+        if not isinstance(prior_messages, list):
+            prior_messages = []
+        input_data = {
+            **prior,
+            "user_query": user_query,
+            "messages": prior_messages + [{"role": "user", "content": user_query}],
+            "current_step": "orchestrator",
+        }
+    else:
+        input_data = PMState(
+            user_query=user_query,
+            messages=[{"role": "user", "content": user_query}],
+        ).model_dump()
 
     yield sse("connected", {"thread_id": thread_id})
 
     try:
-        async for event in _process_pm_events(_get_pm_graph(), initial_state.model_dump(), config):
+        async for event in _process_pm_events(_get_pm_graph(), input_data, config):
             yield event
     except Exception as e:
         yield sse("error", {"error": str(e)})
@@ -250,18 +264,18 @@ async def confirm_prd(
 
     if not approve:
         await _get_pm_graph().aupdate_state(config, {
-            "current_step": "summary",
+            "prd_feedback": "用户要求修改PRD",
             "prd_confirmed": False,
-        })
+        }, as_node="analyzer")
     elif feedback:
         await _get_pm_graph().aupdate_state(config, {
             "prd_feedback": feedback,
             "prd_confirmed": False,
-        })
+        }, as_node="analyzer")
     else:
         await _get_pm_graph().aupdate_state(config, {
             "prd_confirmed": True,
-        })
+        }, as_node="summary")
 
     yield sse("status", {"node": "prd_confirmed", "approved": approve})
 

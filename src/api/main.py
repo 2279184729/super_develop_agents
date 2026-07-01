@@ -1,5 +1,6 @@
 """FastAPI application — PM Agent + Chaos Testing Agent combined API."""
 
+import json
 import os
 from contextlib import asynccontextmanager
 from typing import Any
@@ -22,6 +23,11 @@ from src.agent.testpilot_agent import (
     analyze_defect_stream,
     generate_scripts_stream,
     generate_test_cases_stream,
+)
+from src.storage.checkpoint import (
+    get_testpilot_record,
+    list_testpilot_records,
+    save_testpilot_record,
 )
 
 load_dotenv()
@@ -207,8 +213,10 @@ async def testpilot_generate_cases(
     file: UploadFile | None = File(None),
     url: str = Form(""),
     extra_context: str = Form(""),
+    thread_id: str = Form(""),
 ):
     """Generate test cases from uploaded document or URL."""
+    import uuid as _uuid
     document_text = ""
     if file:
         content = await file.read()
@@ -219,9 +227,20 @@ async def testpilot_generate_cases(
     elif url:
         document_text = url
 
+    tid = thread_id or str(_uuid.uuid4())
+
     async def event_stream():
+        result_data = None
         async for event in generate_test_cases_stream(document_text, extra_context):
+            if event["event"] == "result":
+                result_data = json.loads(event["data"]) if isinstance(event["data"], str) else event["data"]
             yield f"event: {event['event']}\ndata: {event['data']}\n\n"
+        if result_data:
+            save_testpilot_record(tid, "generate_cases", {
+                "document_text": document_text[:200],
+                "cases": result_data.get("cases", []),
+            }, result_data)
+        yield f"event: connected\ndata: {json.dumps({'thread_id': tid})}\n\n"
 
     return StreamingResponse(
         event_stream(),
@@ -231,11 +250,23 @@ async def testpilot_generate_cases(
 
 
 @app.post("/api/testpilot/generate-scripts")
-async def testpilot_generate_scripts(request: GenerateScriptsRequest):
+async def testpilot_generate_scripts(request: GenerateScriptsRequest, thread_id: str = Form("")):
     """Generate automation scripts from test cases."""
+    import uuid as _uuid
+    tid = thread_id or str(_uuid.uuid4())
+
     async def event_stream():
+        result_data = None
         async for event in generate_scripts_stream(request.cases, request.script_type):
+            if event["event"] == "result":
+                result_data = json.loads(event["data"]) if isinstance(event["data"], str) else event["data"]
             yield f"event: {event['event']}\ndata: {event['data']}\n\n"
+        if result_data:
+            save_testpilot_record(tid, "generate_scripts", {
+                "script_type": request.script_type,
+                "case_count": len(request.cases),
+            }, result_data)
+        yield f"event: connected\ndata: {json.dumps({'thread_id': tid})}\n\n"
 
     return StreamingResponse(
         event_stream(),
@@ -245,11 +276,22 @@ async def testpilot_generate_scripts(request: GenerateScriptsRequest):
 
 
 @app.post("/api/testpilot/analyze-defect")
-async def testpilot_analyze_defect(request: AnalyzeDefectRequest):
+async def testpilot_analyze_defect(request: AnalyzeDefectRequest, thread_id: str = Form("")):
     """Analyze defect from error log."""
+    import uuid as _uuid
+    tid = thread_id or str(_uuid.uuid4())
+
     async def event_stream():
+        result_data = None
         async for event in analyze_defect_stream(request.error_log, request.code_context):
+            if event["event"] == "result":
+                result_data = json.loads(event["data"]) if isinstance(event["data"], str) else event["data"]
             yield f"event: {event['event']}\ndata: {event['data']}\n\n"
+        if result_data:
+            save_testpilot_record(tid, "analyze_defect", {
+                "error_log": request.error_log[:200],
+            }, result_data)
+        yield f"event: connected\ndata: {json.dumps({'thread_id': tid})}\n\n"
 
     return StreamingResponse(
         event_stream(),
@@ -322,6 +364,21 @@ async def testpilot_export_cases(request: ExportCasesRequest):
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=test_cases.xlsx"},
     )
+
+
+@app.get("/api/testpilot/threads")
+async def testpilot_threads_api(limit: int = Query(30, ge=1, le=100)):
+    """List recent testpilot generation records."""
+    return list_testpilot_records(limit)
+
+
+@app.get("/api/testpilot/state/{thread_id}")
+async def testpilot_state_api(thread_id: str):
+    """Get a testpilot generation record."""
+    record = get_testpilot_record(thread_id)
+    if record is None:
+        raise HTTPException(status_code=404, detail="Record not found")
+    return record
 
 
 @app.get("/")

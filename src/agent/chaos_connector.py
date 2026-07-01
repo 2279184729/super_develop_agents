@@ -59,8 +59,74 @@ async def call_external_agent(config: dict, user_input: str) -> dict:
 
 
 def _extract_pm_sse_response(events: list[str]) -> str:
-    """Extract final response text from PM SSE events."""
-    for line in reversed(events):
-        if "prd_document" in line or "final_result" in line:
-            return line
+    """Extract meaningful response text from PM Agent SSE events.
+
+    Parses the SSE protocol (event:/data: pairs), accumulates streaming tokens,
+    and falls back to structured events (clarification, analysis, PRD, etc.).
+    """
+    import json as _json
+
+    token_parts: list[str] = []
+    structured: dict[str, str] = {}
+
+    i = 0
+    while i < len(events):
+        line = events[i].strip()
+        if line.startswith("event: "):
+            event_type = line[7:]
+            data = ""
+            if i + 1 < len(events) and events[i + 1].strip().startswith("data: "):
+                data = events[i + 1].strip()[6:]
+                i += 1
+            if event_type == "token" and data:
+                try:
+                    payload = _json.loads(data)
+                    content = payload.get("content", "")
+                    if isinstance(content, str):
+                        token_parts.append(content)
+                except (_json.JSONDecodeError, TypeError):
+                    pass
+            elif data:
+                try:
+                    payload = _json.loads(data)
+                except (_json.JSONDecodeError, TypeError):
+                    payload = {}
+                if event_type == "prd_ready":
+                    prd = payload.get("prd_document", "")
+                    if prd:
+                        structured["prd"] = prd
+                elif event_type == "done":
+                    final = payload.get("final_result", "")
+                    prd = payload.get("prd_document", "")
+                    if prd:
+                        structured["prd"] = prd
+                    elif final:
+                        structured["final"] = final
+                elif event_type == "analysis_done":
+                    analysis = payload.get("analysis_result", "")
+                    if analysis:
+                        structured["analysis"] = analysis
+                elif event_type == "clarification_required":
+                    questions = payload.get("questions", [])
+                    if questions:
+                        q_texts = []
+                        for q in questions:
+                            if isinstance(q, dict):
+                                q_texts.append(q.get("question", str(q)))
+                            else:
+                                q_texts.append(str(q))
+                        structured["clarification"] = " | ".join(q_texts)
+                elif event_type == "orchestrator_decision":
+                    decision = payload.get("decision", "")
+                    sufficiency = payload.get("information_sufficiency", 0)
+                    structured["decision"] = (
+                        f"decision={decision}, sufficiency={sufficiency:.0%}"
+                    )
+        i += 1
+
+    if token_parts:
+        return "".join(token_parts)
+    for key in ("prd", "final", "analysis", "clarification", "decision"):
+        if key in structured:
+            return structured[key]
     return ""

@@ -109,6 +109,46 @@
 
         .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); }
         .empty-state .empty-icon { font-size: 2.5rem; margin-bottom: 0.8rem; }
+        /* History Sidebar */
+        .body-inner { display: flex; flex: 1; min-height: 0; }
+        .history-sidebar {
+            width: 220px; min-width: 220px;
+            background: #f1f5f9;
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+        .history-sidebar-header {
+            padding: 0.7rem 1rem; font-size: 0.72rem; font-weight: 700;
+            color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border); flex-shrink: 0;
+        }
+        .history-sidebar-list { flex: 1; overflow-y: auto; }
+        .history-sidebar-item {
+            padding: 0.55rem 1rem; cursor: pointer;
+            font-size: 0.78rem;
+            border-bottom: 1px solid rgba(0,0,0,0.04);
+            transition: background 0.15s;
+        }
+        .history-sidebar-item:hover { background: #e2e8f0; }
+        .history-sidebar-item.active {
+            background: #cffafe; border-left: 3px solid #0891b2;
+        }
+        .history-sidebar-item .item-title {
+            overflow: hidden; text-overflow: ellipsis;
+            white-space: nowrap; margin-bottom: 2px;
+        }
+        .history-sidebar-item .item-badge {
+            font-size: 0.6rem; padding: 1px 6px;
+            border-radius: 8px; background: #cffafe;
+            color: #0891b2; font-weight: 600;
+            display: inline-block;
+        }
+        .history-sidebar-empty {
+            padding: 1rem; text-align: center;
+            font-size: 0.78rem; color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
@@ -125,6 +165,14 @@
     <div class="tab" data-tab="scripts">&#x1F4C4; 脚本生成</div>
     <div class="tab" data-tab="defects">&#x1F41B; 缺陷分析</div>
 </div>
+
+<div class="body-inner">
+    <div class="history-sidebar">
+        <div class="history-sidebar-header">历史记录</div>
+        <div class="history-sidebar-list" id="historyList">
+            <div class="history-sidebar-empty">暂无历史记录</div>
+        </div>
+    </div>
 
 <div class="content">
     <!-- ═══ Tab 1: Test Case Generation ═══ -->
@@ -242,11 +290,93 @@
         </div>
     </div>
 </div>
+</div><!-- /body-inner -->
 
 <script>
 (() => {
     let testCases = [];
     let isEditing = false;
+    let threadId = null;
+
+    // ── History ──
+    function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+
+    async function loadHistory() {
+        const el = document.getElementById('historyList');
+        try {
+            const r = await fetch('/api/testpilot/threads?limit=50');
+            const threads = await r.json();
+            if (threads.length) {
+                el.innerHTML = threads.map(t => `
+                    <div class="history-sidebar-item${t.thread_id === threadId ? ' active' : ''}"
+                         onclick="loadHistoryThread('${esc(t.thread_id)}')" title="${esc(t.title)}">
+                        <div class="item-title">${esc(t.title)}</div>
+                        <span class="item-badge">${esc(t.type)}</span>
+                    </div>
+                `).join('');
+            } else {
+                el.innerHTML = '<div class="history-sidebar-empty">暂无历史记录</div>';
+            }
+        } catch (e) {}
+    }
+
+    async function loadHistoryThread(tid) {
+        threadId = tid;
+        try {
+            const r = await fetch('/api/testpilot/state/' + tid);
+            if (!r.ok) throw new Error('Record not found');
+            const record = await r.json();
+
+            if (record.type === 'generate_cases' && record.result) {
+                // Switch to generate tab
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelector('[data-tab="generate"]').classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById('tab-generate').classList.add('active');
+
+                if (record.result.cases) {
+                    testCases = record.result.cases;
+                    renderCases();
+                }
+                if (record.result.quality) {
+                    const log = document.getElementById('genLog');
+                    log.style.display = 'block';
+                    log.innerHTML = '<div>质量评估: ' + (record.result.quality.coverage_score * 100).toFixed(0) + '% | 共' + record.result.quality.total_cases + '条</div>';
+                }
+            } else if (record.type === 'generate_scripts' && record.result) {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelector('[data-tab="scripts"]').classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById('tab-scripts').classList.add('active');
+
+                if (record.result.script) {
+                    document.getElementById('scriptCard').style.display = 'block';
+                    document.getElementById('scriptOutput').innerHTML = '<pre style="background:#0f172a;color:#94a3b8;padding:1rem;border-radius:8px;overflow-x:auto;font-size:0.78rem;">' + esc(record.result.script) + '</pre>';
+                }
+            } else if (record.type === 'analyze_defect' && record.result) {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelector('[data-tab="defects"]').classList.add('active');
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.getElementById('tab-defects').classList.add('active');
+
+                if (record.result.analysis) {
+                    document.getElementById('defectCard').style.display = 'block';
+                    document.getElementById('defectOutput').innerHTML = marked.parse(record.result.analysis);
+                }
+            }
+
+            loadHistory();
+        } catch (e) {
+            alert('加载历史记录失败: ' + e.message);
+        }
+    }
+    window.loadHistoryThread = loadHistoryThread;
+
+    loadHistory();
 
     // ── Tab switching ──
     document.querySelectorAll('.tab').forEach(tab => {
@@ -328,6 +458,9 @@
                                 appendGenLog(data.label);
                                 document.getElementById('genStatus').textContent = data.label;
                                 document.getElementById('genProgressFill').style.width = data.progress + '%';
+                            } else if (eventType === 'connected') {
+                                threadId = data.thread_id;
+                                loadHistory();
                             } else if (eventType === 'result') {
                                 testCases = data.cases || [];
                                 renderTestCases();
@@ -448,6 +581,9 @@
                             const data = JSON.parse(line.slice(6));
                             if (eventType === 'status') {
                                 log.innerHTML += '<div>[' + new Date().toLocaleTimeString() + '] ' + esc(data.label) + '</div>';
+                            } else if (eventType === 'connected') {
+                                threadId = data.thread_id;
+                                loadHistory();
                             } else if (eventType === 'result') {
                                 document.getElementById('scriptCard').style.display = 'block';
                                 document.getElementById('scriptOutput').innerHTML = '<pre style="background:#0f172a;color:#94a3b8;padding:1rem;border-radius:8px;overflow-x:auto;font-size:0.78rem;">' + esc(data.script) + '</pre>';
@@ -498,6 +634,9 @@
                             const data = JSON.parse(line.slice(6));
                             if (eventType === 'status') {
                                 log.innerHTML += '<div>[' + new Date().toLocaleTimeString() + '] ' + esc(data.label) + '</div>';
+                            } else if (eventType === 'connected') {
+                                threadId = data.thread_id;
+                                loadHistory();
                             } else if (eventType === 'result') {
                                 document.getElementById('defectResult').style.display = 'block';
                                 document.getElementById('defectOutput').innerHTML = marked.parse(data.analysis || '');
