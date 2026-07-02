@@ -1,10 +1,11 @@
 """Chaos testing target agent connector — internal + external HTTP calls."""
 
+import os
 import time
 import httpx
 from typing import Any
 
-INTERNAL_BASE = "http://localhost:8000"
+INTERNAL_BASE = os.getenv("TEST_API_URL", "http://localhost:18765")
 
 
 async def call_internal_agent(target: str, user_input: str, thread_id: str | None = None) -> dict:

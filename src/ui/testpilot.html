@@ -123,7 +123,16 @@
             color: var(--text-secondary);
             text-transform: uppercase; letter-spacing: 0.05em;
             border-bottom: 1px solid var(--border); flex-shrink: 0;
+            display: flex; align-items: center; justify-content: space-between;
         }
+        .btn-new-chat {
+            width: 22px; height: 22px; border-radius: 50%;
+            border: 1.5px solid var(--border); background: var(--surface);
+            color: var(--text-secondary); font-size: 0.85rem; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            line-height: 1; transition: all 0.15s;
+        }
+        .btn-new-chat:hover { background: #0891b2; color: white; border-color: #0891b2; }
         .history-sidebar-list { flex: 1; overflow-y: auto; }
         .history-sidebar-item {
             padding: 0.55rem 1rem; cursor: pointer;
@@ -168,7 +177,10 @@
 
 <div class="body-inner">
     <div class="history-sidebar">
-        <div class="history-sidebar-header">历史记录</div>
+        <div class="history-sidebar-header">
+            历史记录
+            <button class="btn-new-chat" onclick="newSession()" title="新会话">+</button>
+        </div>
         <div class="history-sidebar-list" id="historyList">
             <div class="history-sidebar-empty">暂无历史记录</div>
         </div>
@@ -375,6 +387,20 @@
         }
     }
     window.loadHistoryThread = loadHistoryThread;
+
+    function newSession() {
+        threadId = null;
+        currentPage = 'cases';
+        document.getElementById('casesContent').innerHTML = '';
+        document.getElementById('scriptsContent').innerHTML = '';
+        document.getElementById('defectCard').style.display = 'none';
+        document.getElementById('defectOutput').innerHTML = '';
+        document.getElementById('casesBtn').disabled = false;
+        document.getElementById('scriptsBtn').disabled = false;
+        document.getElementById('analyzeBtn').disabled = false;
+        loadHistory();
+    }
+    window.newSession = newSession;
 
     loadHistory();
 

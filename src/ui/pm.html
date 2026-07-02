@@ -75,20 +75,6 @@
         .mode-toggle, .header-right {
             display: flex; align-items: center; gap: 0.5rem;
         }
-        .lang-toggle {
-            background: rgba(255,255,255,0.18);
-            border: 1px solid rgba(255,255,255,0.25);
-            color: white;
-            padding: 0.3rem 0.65rem;
-            border-radius: 6px;
-            font-size: 0.78rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            letter-spacing: 0.02em;
-            text-decoration: none;
-        }
-        .mode-toggle:hover, .lang-toggle:hover { background: rgba(255,255,255,0.3); }
 
         /* ═══ Two-Column Layout ═══ */
         .body-inner {
@@ -114,6 +100,29 @@
             letter-spacing: 0.05em;
             border-bottom: 1px solid var(--border);
             flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .btn-new-chat {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border);
+            background: var(--surface);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            transition: all 0.15s;
+        }
+        .btn-new-chat:hover {
+            background: #7c3aed;
+            color: white;
+            border-color: #7c3aed;
         }
         .history-sidebar-list {
             flex: 1;
@@ -826,17 +835,19 @@
         <div class="header-icon">&#x1F4DD;</div>
         <div class="header-text">
             <h1>PM Agent</h1>
-            <p data-i18n="subtitle">Product Manager &middot; Clarify &middot; Analyze &middot; Generate PRD</p>
+            <p>Product Manager · 澄清需求 · 结构化分析 · 生成 PRD</p>
         </div>
         <div class="header-right">
-            <button class="lang-toggle" id="langToggle" title="Switch Language">EN</button>
         </div>
     </div>
 
     <!-- ═══ Body: History Sidebar + Content ═══ -->
     <div class="body-inner">
         <div class="history-sidebar">
-            <div class="history-sidebar-header">历史对话</div>
+            <div class="history-sidebar-header">
+                历史对话
+                <button class="btn-new-chat" onclick="newConversation()" title="新对话">+</button>
+            </div>
             <div class="history-sidebar-list" id="historyList">
                 <div class="history-sidebar-empty">暂无历史对话</div>
             </div>
@@ -846,19 +857,19 @@
     <div class="stepper" id="stepper">
         <div class="step" id="step-understand">
             <span class="step-dot">1</span>
-            <span class="step-label" data-i18n="step_understand">&#x1F4AD; Understand</span>
+            <span class="step-label">💭 理解需求</span>
         </div>
         <div class="step" id="step-clarify">
             <span class="step-dot">2</span>
-            <span class="step-label" data-i18n="step_clarify">&#x2753; Clarify</span>
+            <span class="step-label">❓ 澄清问题</span>
         </div>
         <div class="step" id="step-analyze">
             <span class="step-dot">3</span>
-            <span class="step-label" data-i18n="step_analyze">&#x1F50D; Analyze</span>
+            <span class="step-label">🔍 需求分析</span>
         </div>
         <div class="step" id="step-prd">
             <span class="step-dot">4</span>
-            <span class="step-label" data-i18n="step_prd">&#x1F4C4; Generate PRD</span>
+            <span class="step-label">📄 生成 PRD</span>
         </div>
     </div>
 
@@ -866,8 +877,8 @@
         <div class="chat-inner" id="chatInner">
             <div class="welcome" id="welcome">
                 <div class="welcome-icon">&#x1F4CB;</div>
-                <h2 data-i18n="welcome_title">PM Agent - Product Manager</h2>
-                <p data-i18n="welcome_desc">Enter your product idea (even a vague one-liner). The PM Agent will ask targeted questions, analyze requirements, and generate a structured PRD document.</p>
+                <h2>PM Agent - 产品经理</h2>
+                <p>输入您的产品想法（哪怕只是一句话）。PM Agent 会通过提问澄清需求、进行结构化分析，最终生成完整的 PRD 文档。</p>
             </div>
         </div>
     </div>
@@ -875,10 +886,9 @@
     <div class="input-container">
         <form class="input-form" id="inputForm">
             <input type="text" id="queryInput"
-                   data-i18n-placeholder="input_placeholder"
-                   placeholder="Describe your product idea, e.g.: I want to build a food delivery app..."
+                   placeholder="描述您的产品想法，例如：我想做一个外卖App..."
                    autocomplete="off">
-            <button type="submit" id="submitBtn" data-i18n="send_btn">Send</button>
+            <button type="submit" id="submitBtn">发送</button>
         </form>
     </div>
 
@@ -891,7 +901,6 @@
         const btn       = document.getElementById('submitBtn');
         const stepper   = document.getElementById('stepper');
         const welcome   = document.getElementById('welcome');
-        const langBtn   = document.getElementById('langToggle');
 
         let threadId = null;
         let currentQuery = '';
@@ -989,104 +998,22 @@
         }
         window.loadHistoryThread = loadHistoryThread;
         window.loadHistory = loadHistory;
+        function newConversation() {
+            threadId = null;
+            currentQuery = '';
+            chatInner.innerHTML = '';
+            if (welcome) welcome.style.display = '';
+            input.value = '';
+            busy = false;
+            btn.disabled = false;
+            hideStepper();
+            loadHistory();
+        }
+        window.newConversation = newConversation;
         let busy     = false;
         let rawBuffer = '';
         let streamDiv = null;
         let renderTimer = null;
-
-        // ── i18n ──
-        const i18n = {
-            zh: {
-                subtitle: 'Product Manager · 澄清需求 · 结构化分析 · 生成 PRD',
-                step_understand: '\u{1F4AD} 理解需求',
-                step_clarify: '❓ 澄清问题',
-                step_analyze: '\u{1F50D} 需求分析',
-                step_prd: '\u{1F4C4} 生成 PRD',
-                welcome_title: 'PM Agent - 产品经理',
-                welcome_desc: '输入您的产品想法（哪怕只是一句话）。PM Agent 会通过提问澄清需求、进行结构化分析，最终生成完整的 PRD 文档。',
-                input_placeholder: '描述您的产品想法，例如：我想做一个外卖App...',
-                send_btn: '发送',
-                clarify_title: '澄清问题',
-                round_label: '第{n}轮',
-                submit_answers: '提交回答',
-                analysis_title: '需求分析报告',
-                toggle_collapse: '收起',
-                toggle_expand: '展开',
-                prd_title: 'PRD 文档',
-                confirm_prd: '✅ 确认',
-                revise_prd: '✏️ 修改',
-                download_prd: '⬇️ 下载',
-                revise_placeholder: '输入修改意见，例如：增加社交功能...',
-                revise_submit: '提交',
-                sufficiency_label: '信息充足度',
-                error_label: '⚠️ 错误',
-                                lang_label: 'EN',
-            },
-            en: {
-                subtitle: 'Product Manager · Clarify · Analyze · Generate PRD',
-                step_understand: '\u{1F4AD} Understand',
-                step_clarify: '❓ Clarify',
-                step_analyze: '\u{1F50D} Analyze',
-                step_prd: '\u{1F4C4} Generate PRD',
-                welcome_title: 'PM Agent - Product Manager',
-                welcome_desc: 'Enter your product idea (even a vague one-liner). The PM Agent will ask targeted questions, analyze requirements, and generate a structured PRD document.',
-                input_placeholder: 'Describe your product idea, e.g.: I want to build a food delivery app...',
-                send_btn: 'Send',
-                clarify_title: 'Clarification Questions',
-                round_label: 'Round {n}',
-                submit_answers: 'Submit Answers',
-                analysis_title: 'Requirements Analysis',
-                toggle_collapse: 'Collapse',
-                toggle_expand: 'Expand',
-                prd_title: 'PRD Document',
-                confirm_prd: '✅ Confirm',
-                revise_prd: '✏️ Revise',
-                download_prd: '⬇️ Download',
-                revise_placeholder: 'Enter revision feedback, e.g.: add social features...',
-                revise_submit: 'Submit',
-                sufficiency_label: 'Sufficiency',
-                error_label: '⚠️ Error',
-                switch_agent: 'Agent Mode',
-                lang_label: '中',
-            },
-        };
-
-        let currentLang = localStorage.getItem('lang') || 'zh';
-
-        function t(key, replacements) {
-            let text = (i18n[currentLang] && i18n[currentLang][key]) || key;
-            if (replacements) {
-                for (const [k, v] of Object.entries(replacements)) {
-                    text = text.replace(`{${k}}`, v);
-                }
-            }
-            return text;
-        }
-
-        function applyI18n() {
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (i18n[currentLang] && i18n[currentLang][key] !== undefined) {
-                    el.textContent = i18n[currentLang][key];
-                }
-            });
-            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-                const key = el.getAttribute('data-i18n-placeholder');
-                if (i18n[currentLang] && i18n[currentLang][key] !== undefined) {
-                    el.placeholder = i18n[currentLang][key];
-                }
-            });
-            langBtn.textContent = t('lang_label');
-            document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
-        }
-
-        langBtn.addEventListener('click', () => {
-            currentLang = currentLang === 'zh' ? 'en' : 'zh';
-            localStorage.setItem('lang', currentLang);
-            applyI18n();
-        });
-
-        applyI18n();
 
         // ── Configure marked ──
         marked.setOptions({
@@ -1181,7 +1108,7 @@
         function addError(text) {
             const div = document.createElement('div');
             div.className = 'error-card';
-            div.innerHTML = `<strong>${t('error_label')}</strong>${escHtml(text)}`;
+            div.innerHTML = `<strong>⚠️ 错误</strong>${escHtml(text)}`;
             chatInner.appendChild(div);
             scrollBottom();
         }
@@ -1219,12 +1146,12 @@
             card.innerHTML = `
                 <div class="clarify-header">
                     <div class="clarify-header-icon">&#x2753;</div>
-                    <h3>${t('clarify_title')}</h3>
-                    <span class="round-badge">${t('round_label', {n: roundNumber})}</span>
+                    <h3>澄清问题</h3>
+                    <span class="round-badge">第${roundNumber}轮</span>
                 </div>
                 <div class="clarify-body">${questionsHtml}</div>
                 <div class="clarify-actions">
-                    <button class="btn-submit-answers">${t('submit_answers')}</button>
+                    <button class="btn-submit-answers">提交回答</button>
                 </div>
             `;
             chatInner.appendChild(card);
@@ -1293,7 +1220,7 @@
             const div = document.createElement('div');
             div.className = 'sufficiency-bar';
             div.innerHTML = `
-                <span class="sufficiency-label">${t('sufficiency_label')}: ${pct}%</span>
+                <span class="sufficiency-label">信息充足度: ${pct}%</span>
                 <div class="sufficiency-track">
                     <div class="sufficiency-fill" style="width: ${pct}%"></div>
                 </div>
@@ -1310,8 +1237,8 @@
             card.innerHTML = `
                 <div class="analysis-header">
                     <div class="analysis-header-icon">&#x1F50D;</div>
-                    <h3>${t('analysis_title')}</h3>
-                    <span class="analysis-toggle">${t('toggle_collapse')}</span>
+                    <h3>需求分析报告</h3>
+                    <span class="analysis-toggle">收起</span>
                 </div>
                 <div class="analysis-body"></div>
             `;
@@ -1325,7 +1252,7 @@
             const toggle = card.querySelector('.analysis-toggle');
             header.addEventListener('click', () => {
                 body.classList.toggle('collapsed');
-                toggle.textContent = body.classList.contains('collapsed') ? t('toggle_expand') : t('toggle_collapse');
+                toggle.textContent = body.classList.contains('collapsed') ? '展开' : '收起';
             });
 
             return card;
@@ -1339,17 +1266,17 @@
             card.innerHTML = `
                 <div class="prd-header">
                     <div class="prd-header-icon">&#x1F4C4;</div>
-                    <h3>${t('prd_title')}</h3>
+                    <h3>PRD 文档</h3>
                 </div>
                 <div class="prd-body"></div>
                 <div class="prd-actions">
-                    <button class="btn-confirm-prd">${t('confirm_prd')}</button>
-                    <button class="btn-revise-prd">${t('revise_prd')}</button>
-                    <button class="btn-download-prd">${t('download_prd')}</button>
+                    <button class="btn-confirm-prd">✅ 确认</button>
+                    <button class="btn-revise-prd">✏️ 修改</button>
+                    <button class="btn-download-prd">⬇️ 下载</button>
                 </div>
                 <div class="prd-revise-row">
-                    <input type="text" placeholder="${t('revise_placeholder')}">
-                    <button>${t('revise_submit')}</button>
+                    <input type="text" placeholder="输入修改意见，例如：增加社交功能...">
+                    <button>提交</button>
                 </div>
             `;
             const prdBody = card.querySelector('.prd-body');
